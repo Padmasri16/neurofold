@@ -1,0 +1,63 @@
+# ================================
+# 🧠 NeuroFold – Backend Dockerfile
+# ================================
+
+FROM python:3.11-slim
+
+# Disable Python buffer + improve speed
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Ensure Python can import "backend.*"
+ENV PYTHONPATH="/app/backend:/app"
+
+
+# --------------------------------------
+# Install system dependencies
+# --------------------------------------
+RUN apt-get update && apt-get install -y \
+ build-essential \
+ curl \
+ wget \
+ git \
+ libpq-dev \
+ gcc \
+ libffi-dev \
+ libssl-dev \
+ libbz2-dev \
+ liblzma-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+# --------------------------------------
+# Working directory
+# --------------------------------------
+WORKDIR /app
+
+# --------------------------------------
+# Copy *requirements only* first (better caching)
+# --------------------------------------
+COPY backend/requirements.txt /app/backend/requirements.txt
+COPY ml/requirements.txt /app/ml/requirements.txt
+
+# --------------------------------------
+# Install Python dependencies
+# --------------------------------------
+RUN pip install --upgrade pip
+RUN pip install -r /app/backend/requirements.txt
+RUN pip install -r /app/ml/requirements.txt
+
+# --------------------------------------
+# Copy the actual source code AFTER installing dependencies
+# --------------------------------------
+COPY backend/ /app/backend/
+COPY ml/ /app/ml/
+
+# --------------------------------------
+# Backend default exposed port
+# --------------------------------------
+EXPOSE 8000
+
+# --------------------------------------
+# Default command (will be overridden by docker-compose)
+# --------------------------------------
+CMD ["bash"]

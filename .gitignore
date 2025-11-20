@@ -1,0 +1,61 @@
+# ===================================
+# 🧬 NeuroFold – Git Ignore Settings
+# ===================================
+
+# Environment variables
+.env
+*.env
+
+# Python virtual environments
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.sqlite3
+
+# FastAPI build artifacts
+backend/.mypy_cache/
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+
+# Machine Learning model outputs
+ml/models/*.joblib
+ml/models/*.pkl
+
+# Local storage (uploads, reports, shap images)
+storage/uploads/
+storage/reports/
+storage/shap_images/
+
+# DSSP cache or temporary files
+dssp_tmp/
+
+# Node modules (frontend)
+frontend/node_modules/
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+
+# Logs
+*.log
+logs/
+backend/logs/
+frontend/logs/
+
+# OS Specific
+.DS_Store
+Thumbs.db
+
+# IDE Specific
+.vscode/
+.idea/
+
+# Docker
+docker-data/

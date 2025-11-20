@@ -1,0 +1,127 @@
+version: "3.9"
+
+services:
+  # -----------------------------------
+  # 🧠 FASTAPI BACKEND
+  # -----------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: neurofold-backend
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app/backend
+      - ./ml:/app/ml
+      - ./storage:/app/storage
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    command: >
+      sh -c "uvicorn backend.app.main:app --host 0.0.0.0 --port 8000"
+
+  # -----------------------------------
+  # 🧬 MACHINE LEARNING LAYER
+  # -----------------------------------
+  ml:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: neurofold-ml
+    env_file:
+      - .env
+    volumes:
+      - ./ml:/app/ml
+      - ./storage:/app/storage
+    depends_on:
+      - backend
+
+  # -----------------------------------
+  # 🎛 CELERY WORKER
+  # -----------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: neurofold-worker
+    working_dir: /app
+    command: >
+      sh -c "celery -A backend.app.workers.celery_worker worker --loglevel=info"
+    volumes:
+      - ./backend:/app/backend
+      - ./ml:/app/ml
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - backend
+
+  # -----------------------------------
+  # 🗄 POSTGRES DATABASE
+  # -----------------------------------
+  postgres:
+    image: postgres:15
+    container_name: neurofold-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: neurofold123
+      POSTGRES_DB: neurofold
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./infra/postgres-init:/docker-entrypoint-initdb.d
+
+  # -----------------------------------
+  # ⚡ REDIS (for Celery)
+  # -----------------------------------
+  redis:
+    image: redis:7
+    container_name: neurofold-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # -----------------------------------
+  # 🌐 NEXT.JS FRONTEND
+  # -----------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: neurofold-frontend
+    env_file:
+      - .env
+    volumes:
+      - ./frontend:/app/frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  # -----------------------------------
+  # 🚦 NGINX REVERSE PROXY
+  # -----------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: neurofold-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - backend
+      - frontend
+
+# -----------------------------------
+# VOLUMES
+# -----------------------------------
+volumes:
+  db_data:
+  redis_data:
